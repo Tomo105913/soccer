@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サッカー選手育成アプリ</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; justify-content: center; padding: 20px; }
+.app { max-width: 480px; width: 100%; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+
+.header { background: #E85B10; color: white; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+.header-text h1 { font-size: 17px; font-weight: 600; }
+.header-text .sub { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+
+.tabs { display: flex; border-bottom: 1px solid #eee; background: #fafafa; }
+.tab { flex: 1; padding: 10px 0; font-size: 12px; cursor: pointer; text-align: center; border: none; background: transparent; color: #888; border-bottom: 2px solid transparent; font-family: inherit; }
+.tab.active { color: #E85B10; border-bottom: 2px solid #E85B10; font-weight: 600; }
+.panel { display: none; padding: 16px; }
+.panel.active { display: block; }
+
+.evo-badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 8px; margin-left: 6px; font-weight: 600; }
+.evo-1 { background: #e0e0e0; color: #555; }
+.evo-2 { background: #b3e0ff; color: #0060a0; }
+.evo-3 { background: #c8f0c8; color: #2a7a2a; }
+.evo-4 { background: linear-gradient(90deg,#ffe066,#ffb347); color: #7a4000; }
+
+.player-area { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 12px; }
+.char-wrap { flex-shrink: 0; }
+.char-stage { font-size: 10px; color: #888; text-align: center; margin-top: 4px; }
+.stats-box { flex: 1; }
+.name-level { margin-bottom: 8px; }
+.player-name { font-size: 16px; font-weight: 600; color: #222; }
+.level-badge { display: inline-block; background: #E85B10; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
+.overall { font-size: 13px; color: #666; margin-top: 4px; }
+.overall span { font-size: 22px; font-weight: 700; color: #E85B10; }
+
+.stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.stat-label { font-size: 12px; color: #666; width: 60px; flex-shrink: 0; }
+.stat-bar-wrap { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+.stat-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.stat-val { font-size: 12px; font-weight: 600; color: #222; width: 36px; text-align: right; }
+
+.radar-wrap { display: flex; justify-content: center; margin: 4px 0 12px; }
+
+.stat-reset-btn { display: flex; align-items: center; gap: 6px; background: #fff0f0; border: 1px solid #ffcccc; border-radius: 8px; padding: 8px 14px; font-size: 12px; color: #cc3333; cursor: pointer; font-family: inherit; font-weight: 600; margin-bottom: 12px; }
+.stat-reset-btn:hover { background: #ffe0e0; }
+
+.bonus-progress-wrap { background: #fff5f0; border: 1px solid #ffd0b0; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.bonus-progress-title { font-size: 12px; color: #b04010; font-weight: 600; margin-bottom: 6px; }
+.bonus-bar-outer { background: #ffd0b0; border-radius: 4px; height: 10px; overflow: hidden; margin-bottom: 4px; }
+.bonus-bar-inner { height: 100%; background: linear-gradient(90deg,#E85B10,#ff9000); border-radius: 4px; transition: width 0.4s; }
+.bonus-progress-sub { font-size: 11px; color: #b04010; }
+
+.train-section-label { font-size: 12px; color: #888; font-weight: 600; margin: 8px 0 6px; grid-column: 1/-1; border-left: 3px solid #E85B10; padding-left: 8px; }
+.training-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.train-card { background: white; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; }
+.train-info { padding: 10px 12px 6px; }
+.train-info .t-name { font-size: 13px; font-weight: 600; color: #222; }
+.train-info .t-effect { font-size: 11px; color: #666; margin-top: 2px; }
+.train-info .t-pts { font-size: 11px; color: #E85B10; font-weight: 600; margin-top: 2px; }
+.train-btn-row { display: flex; border-top: 1px solid #f0f0f0; }
+.train-normal-btn { flex: 1; padding: 8px 0; font-size: 12px; font-weight: 600; background: #f8f8f8; border: none; cursor: pointer; font-family: inherit; color: #444; }
+.train-normal-btn:hover { background: #eee; }
+.train-ex-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 700; background: linear-gradient(135deg,#ffe066,#ffb300); border: none; cursor: pointer; font-family: inherit; color: #7a4000; border-left: 1px solid #f0f0f0; }
+.train-ex-btn:hover { filter: brightness(1.08); }
+.train-normal-btn:active, .train-ex-btn:active { transform: scale(0.97); }
+
+.match-section { background: #f8f8f8; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+.match-section label { font-size: 13px; color: #666; display: block; margin-bottom: 6px; font-weight: 500; }
+.match-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.match-row input[type=number] { flex: 1; font-size: 14px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
+.match-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.match-grid-item label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; font-weight: 500; }
+.match-grid-item input { width: 100%; font-size: 14px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; text-align: center; }
+.add-btn { background: #E85B10; color: white; border: none; border-radius: 10px; padding: 12px 18px; font-size: 14px; cursor: pointer; width: 100%; margin-top: 4px; font-family: inherit; font-weight: 600; }
+.add-btn:hover { background: #c24e0d; }
+.rule-card { background: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; font-size: 12px; color: #1a4a7a; line-height: 1.8; }
+.rule-card b { color: #E85B10; }
+
+.log-list { max-height: 320px; overflow-y: auto; }
+.log-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.log-item .log-name { font-size: 13px; color: #222; font-weight: 500; }
+.log-item .log-pts { font-size: 12px; color: #E85B10; font-weight: 600; margin-top: 2px; }
+.log-item .log-date { font-size: 12px; color: #aaa; flex-shrink: 0; margin-left: 8px; }
+.log-empty { font-size: 13px; color: #aaa; padding: 30px 0; text-align: center; }
+
+.section-title { font-size: 14px; font-weight: 600; color: #222; margin-bottom: 12px; }
+.section-subtitle { font-size: 12px; font-weight: 600; color: #555; margin: 16px 0 8px; padding-left: 8px; border-left: 3px solid #E85B10; }
+
+/* 設定パスワード画面 */
+.pw-gate { text-align: center; padding: 30px 16px; }
+.pw-gate .lock-icon { font-size: 40px; margin-bottom: 12px; }
+.pw-gate p { font-size: 13px; color: #666; margin-bottom: 16px; }
+.pw-input { font-size: 18px; padding: 10px 16px; border: 2px solid #ddd; border-radius: 10px; width: 140px; text-align: center; font-family: inherit; letter-spacing: 4px; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto; }
+.pw-input:focus { outline: none; border-color: #E85B10; }
+.pw-btn { background: #E85B10; color: white; border: none; border-radius: 10px; padding: 10px 28px; font-size: 14px; cursor: pointer; font-family: inherit; font-weight: 600; }
+.pw-btn:hover { background: #c24e0d; }
+.pw-error { font-size: 12px; color: #cc3333; margin-top: 8px; min-height: 18px; }
+
+/* 設定本体 */
+.settings-body { display: none; }
+.settings-body.unlocked { display: block; }
+
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.settings-item label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
+.settings-item input { width: 100%; font-size: 14px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; text-align: center; }
+
+.edit-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.edit-row label { font-size: 13px; color: #666; width: 90px; flex-shrink: 0; }
+.edit-row input { flex: 1; font-size: 14px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.save-btn { background: #E85B10; color: white; border: none; border-radius: 10px; padding: 10px 20px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+.save-btn:hover { background: #c24e0d; }
+.danger-btn { background: white; border: 1px solid #ffaaaa; border-radius: 10px; padding: 10px 16px; font-size: 13px; cursor: pointer; color: #cc3333; font-family: inherit; font-weight: 600; }
+.danger-btn:hover { background: #fff0f0; }
+.reset-btn { background: white; border: 1px solid #ddd; border-radius: 10px; padding: 10px 16px; font-size: 13px; cursor: pointer; color: #888; font-family: inherit; }
+.reset-btn:hover { background: #f5f5f5; }
+.lock-btn { background: white; border: 1px solid #ddd; border-radius: 10px; padding: 10px 16px; font-size: 13px; cursor: pointer; color: #888; font-family: inherit; }
+.lock-btn:hover { background: #f5f5f5; }
+
+.pt-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.pt-row label { font-size: 12px; color: #666; flex: 1; }
+.pt-row input { width: 70px; font-size: 13px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; font-family: inherit; }
+.pt-note { font-size: 11px; color: #aaa; margin-bottom: 12px; }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: white; border-radius: 16px; padding: 24px; max-width: 320px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.modal h2 { font-size: 16px; color: #cc3333; margin-bottom: 10px; }
+.modal p { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 18px; }
+.modal-btns { display: flex; gap: 10px; }
+.modal-btns button { flex: 1; padding: 10px; border-radius: 10px; font-size: 14px; font-family: inherit; cursor: pointer; font-weight: 600; border: none; }
+.modal-cancel { background: #f0f0f0; color: #555; }
+.modal-confirm { background: #cc3333; color: white; }
+
+.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #222; color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 300; white-space: nowrap; font-family: inherit; }
+.toast.excellent { background: linear-gradient(135deg,#ff9000,#E85B10); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <svg width="44" height="52" viewBox="0 0 44 52">
+      <circle cx="22" cy="12" r="9" fill="#fde4c8"/>
+      <circle cx="18" cy="10" r="1.6" fill="#333"/>
+      <circle cx="26" cy="10" r="1.6" fill="#333"/>
+      <path d="M19 14 Q22 17 25 14" stroke="#b05030" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+      <rect x="10" y="21" width="24" height="16" rx="4" fill="white"/>
+      <rect x="10" y="21" width="24" height="16" rx="4" fill="none" stroke="#E85B10" stroke-width="1.5"/>
+      <text x="22" y="32" text-anchor="middle" font-size="8" font-weight="800" fill="#E85B10">FC</text>
+      <rect x="3" y="24" width="8" height="11" rx="3" fill="#fde4c8"/>
+      <rect x="33" y="24" width="8" height="11" rx="3" fill="#fde4c8"/>
+      <rect x="12" y="37" width="8" height="13" rx="3" fill="#1a1a2e"/>
+      <rect x="24" y="37" width="8" height="13" rx="3" fill="#1a1a2e"/>
+    </svg>
+    <div class="header-text">
+      <h1 id="headerName">サッカー選手育成アプリ</h1>
+      <div class="sub">練習してレベルアップしよう！</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('status',this)">ステータス</button>
+    <button class="tab" onclick="showTab('training',this)">練習</button>
+    <button class="tab" onclick="showTab('match',this)">試合</button>
+    <button class="tab" onclick="showTab('log',this)">記録</button>
+    <button class="tab" onclick="showTab('settings',this)">設定</button>
+  </div>
+
+  <!-- ステータス -->
+  <div id="tab-status" class="panel active">
+    <div class="player-area">
+      <div class="char-wrap">
+        <svg id="charSvg" width="90" height="110" viewBox="0 0 90 110"></svg>
+        <div class="char-stage" id="charStageLabel"></div>
+      </div>
+      <div class="stats-box">
+        <div class="name-level">
+          <span class="player-name" id="dispName">選手</span>
+          <span class="level-badge" id="dispLevel">Lv.1</span>
+          <span class="evo-badge evo-1" id="evoBadge">ビギナー</span>
+        </div>
+        <div class="overall">総合力: <span id="dispOverall">0</span></div>
+        <div style="margin-top:10px;" id="statBars"></div>
+      </div>
+    </div>
+    <button class="stat-reset-btn" onclick="openStatReset()">🔄 ステータスをリセット</button>
+    <div class="radar-wrap">
+      <svg id="radarSvg" width="300" height="260" viewBox="0 0 300 260"></svg>
+    </div>
+    <div class="bonus-progress-wrap" id="bonusWrap"></div>
+  </div>
+
+  <!-- 練習 -->
+  <div id="tab-training" class="panel">
+    <div class="section-title">練習メニュー</div>
+    <div class="training-grid" id="trainingGrid"></div>
+  </div>
+
+  <!-- 試合 -->
+  <div id="tab-match" class="panel">
+    <div class="section-title">試合記録</div>
+    <div class="rule-card" id="matchRuleCard"></div>
+    <div class="match-section">
+      <label>出場時間（分）</label>
+      <div class="match-row"><input type="number" id="matchMin" min="0" max="120" value="0" placeholder="0〜120"></div>
+      <div class="match-grid">
+        <div class="match-grid-item">
+          <label>⚽ ゴール</label>
+          <input type="number" id="matchGoals" min="0" value="0">
+        </div>
+        <div class="match-grid-item">
+          <label>🎯 アシスト</label>
+          <input type="number" id="matchAssists" min="0" value="0">
+        </div>
+        <div class="match-grid-item" style="display:flex;align-items:flex-end;">
+          <button class="add-btn" style="margin-top:0;" onclick="addMatch()">記録</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 記録 -->
+  <div id="tab-log" class="panel">
+    <div class="section-title">練習・試合ログ</div>
+    <div class="log-list" id="logList"></div>
+  </div>
+
+  <!-- 設定 -->
+  <div id="tab-settings" class="panel">
+
+    <!-- パスワードゲート -->
+    <div class="pw-gate" id="pwGate">
+      <div class="lock-icon">🔒</div>
+      <p>設定を変更するには<br>パスワードを入力してください</p>
+      <input class="pw-input" type="password" id="pwInput" maxlength="6" placeholder="••••"
+        onkeydown="if(event.key==='Enter') checkPw()">
+      <br>
+      <button class="pw-btn" onclick="checkPw()">解除</button>
+      <div class="pw-error" id="pwError"></div>
+    </div>
+
+    <!-- 設定本体（解除後に表示） -->
+    <div class="settings-body" id="settingsBody">
+
+      <div class="section-title">選手情報</div>
+      <div class="edit-row"><label>選手名</label><input type="text" id="editName" placeholder="名前を入力"></div>
+      <div class="btn-row">
+        <button class="save-btn" onclick="saveSettings()">保存</button>
+        <button class="danger-btn" onclick="openStatReset()">ステータスリセット</button>
+        <button class="reset-btn" onclick="openFullReset()">全データリセット</button>
+        <button class="lock-btn" onclick="lockSettings()">🔒 ロック</button>
+      </div>
+
+      <!-- 試合ルール設定 -->
+      <div class="section-subtitle">⚽ 試合ポイント設定</div>
+      <div class="settings-grid">
+        <div class="settings-item">
+          <label>出場時間の単位（分）</label>
+          <input type="number" id="cfg_matchUnit" min="1" max="30" value="10">
+        </div>
+        <div class="settings-item">
+          <label>時間ボーナス（全パラ）</label>
+          <input type="number" id="cfg_matchTimePts" min="1" max="100" value="1">
+        </div>
+        <div class="settings-item">
+          <label>ゴール → シュート力</label>
+          <input type="number" id="cfg_goalPts" min="1" max="100" value="5">
+        </div>
+        <div class="settings-item">
+          <label>アシスト → テクニック</label>
+          <input type="number" id="cfg_assistPts" min="1" max="100" value="3">
+        </div>
+      </div>
+
+      <!-- レベル・ランク設定 -->
+      <div class="section-subtitle">⬆️ レベル・ランクアップ設定</div>
+      <div class="settings-grid">
+        <div class="settings-item">
+          <label>レベルアップ（総合力）</label>
+          <input type="number" id="cfg_levelStep" min="10" max="9999" value="150">
+        </div>
+        <div class="settings-item">
+          <label>ランクアップ（Lv数）</label>
+          <input type="number" id="cfg_rankStep" min="1" max="99" value="10">
+        </div>
+      </div>
+
+      <!-- ボーナス設定 -->
+      <div class="section-subtitle">🎁 ボーナス設定</div>
+      <div class="settings-grid">
+        <div class="settings-item">
+          <label>ボーナス発動（合計pt）</label>
+          <input type="number" id="cfg_bonusEvery" min="1" max="9999" value="30">
+        </div>
+        <div class="settings-item">
+          <label>ボーナス量（総合力）</label>
+          <input type="number" id="cfg_bonusAmount" min="1" max="9999" value="100">
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <button class="save-btn" onclick="saveConfig()">設定を保存</button>
+      </div>
+
+      <!-- 練習ポイント設定 -->
+      <div class="section-subtitle" style="margin-top:20px;">🏋️ 練習ポイント設定（通常）</div>
+      <div class="pt-note">EXCELLENTは自動で×1.5倍（小数点切り捨て）</div>
+      <div id="ptSettings"></div>
+
+    </div><!-- /settings-body -->
+  </div>
+</div>
+
+<!-- モーダル -->
+<div class="modal-overlay" id="modalStatReset">
+  <div class="modal">
+    <h2>⚠️ ステータスリセット</h2>
+    <p>すべてのパラメータを0にリセットします。練習ログは残ります。<br><br>本当にリセットしますか？</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('modalStatReset')">キャンセル</button>
+      <button class="modal-confirm" onclick="doStatReset()">リセットする</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalFullReset">
+  <div class="modal">
+    <h2>⚠️ 全データリセット</h2>
+    <p>ステータス・練習ログ・選手名・ポイント設定をすべて削除します。この操作は元に戻せません。<br><br>本当にリセットしますか？</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal('modalFullReset')">キャンセル</button>
+      <button class="modal-confirm" onclick="doFullReset()">すべて削除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== 定数 ======
+const STAT_KEYS   = ['shoot','tech','agility','core','stamina'];
+const STAT_NAMES  = {shoot:'シュート力', tech:'テクニック', agility:'機敏性', core:'体幹', stamina:'スタミナ'};
+const STAT_COLORS = {shoot:'#E85B10', tech:'#2196F3', agility:'#4CAF50', core:'#9C27B0', stamina:'#FF9800'};
+const PASSWORD    = '0913';
+
+const TRAININGS = [
+  {id:'pk',      name:'PK練習',          icon:'⚽', cat:'shoot',   effect:{shoot:1},   desc:'シュート力アップ', def:10},
+  {id:'touch',   name:'ボールタッチ練習', icon:'🦶', cat:'tech',    effect:{tech:1},    desc:'テクニックアップ', def:10},
+  {id:'lifting', name:'リフティング',     icon:'🔄', cat:'tech',    effect:{tech:1},    desc:'テクニックアップ', def:10},
+  {id:'ladder',  name:'ラダー練習',       icon:'🪜', cat:'agility', effect:{agility:1}, desc:'機敏性アップ',     def:10},
+  {id:'geta',    name:'下駄トレーニング', icon:'👟', cat:'core',    effect:{core:1},    desc:'体幹アップ',       def:10},
+  {id:'shuttle', name:'シャトルラン',     icon:'🏃', cat:'stamina', effect:{stamina:1}, desc:'スタミナアップ',   def:10},
+  {id:'dribble', name:'ドリブル鬼ごっこ', icon:'🔴', cat:'stamina', effect:{stamina:1}, desc:'スタミナアップ',   def:10},
+];
+const CAT_LABELS = {shoot:'シュート系', tech:'テクニック系', agility:'機敏性系', core:'体幹系', stamina:'スタミナ系'};
+
+// ランク（EVO）はrankStepレベルごとに変化
+const EVO_DEFS = [
+  {label:'ビギナー',   cls:'evo-1', stageText:'Tシャツ'},
+  {label:'アマチュア', cls:'evo-2', stageText:'ランニングシャツ'},
+  {label:'セミプロ',   cls:'evo-3', stageText:'ユニフォーム'},
+  {label:'プロ',       cls:'evo-4', stageText:'カラフルユニフォーム'},
+];
+
+// ====== デフォルト設定 ======
+const DEFAULT_CFG = {
+  matchUnit:    10,   // 出場時間単位（分）
+  matchTimePts: 1,    // 時間ボーナス
+  goalPts:      5,    // ゴールpt
+  assistPts:    3,    // アシストpt
+  levelStep:    150,  // レベルアップ総合力
+  rankStep:     10,   // ランクアップLv数
+  bonusEvery:   30,   // ボーナス発動合計pt
+  bonusAmount:  100,  // ボーナス量
+};
+
+function defPts(){ const o={}; TRAININGS.forEach(t=>{o[t.id]=t.def;}); return o; }
+
+// ====== データ ======
+function loadData(){
+  try{
+    const r=localStorage.getItem('soccer_v7');
+    if(r) return JSON.parse(r);
+    // マイグレーション
+    const old=localStorage.getItem('soccer_v6')||localStorage.getItem('soccer_v5');
+    if(old){ const o=JSON.parse(old); return {name:o.name||'選手',stats:o.stats||{},pts:defPts(),log:o.log||[],cfg:{...DEFAULT_CFG}}; }
+  }catch(e){}
+  return {name:'選手',stats:{shoot:0,tech:0,agility:0,core:0,stamina:0},pts:defPts(),log:[],cfg:{...DEFAULT_CFG}};
+}
+function saveData(d){ try{localStorage.setItem('soccer_v7',JSON.stringify(d));}catch(e){} }
+let data = loadData();
+if(!data.cfg) data.cfg={...DEFAULT_CFG};
+
+function cfg(){ return {...DEFAULT_CFG, ...data.cfg}; }
+
+// ====== 計算 ======
+function totalStats(d){ return STAT_KEYS.reduce((s,k)=>s+(d.stats[k]||0),0); }
+function calcBonus(d){ return Math.floor(totalStats(d)/cfg().bonusEvery)*cfg().bonusAmount; }
+function getOverall(d){ return totalStats(d)+calcBonus(d); }
+function getLevel(overall){ return Math.floor(overall/cfg().levelStep)+1; }
+function getEvo(lv){
+  const idx=Math.min(EVO_DEFS.length-1, Math.floor((lv-1)/cfg().rankStep));
+  return EVO_DEFS[idx];
+}
+
+// ====== キャラ ======
+function drawCharacter(lv){
+  const svg=document.getElementById('charSvg');
+  const skin='#fde4c8',eye='#333';
+  const evoIdx=Math.min(EVO_DEFS.length-1,Math.floor((lv-1)/cfg().rankStep));
+  let head=`<circle cx="40" cy="18" r="14" fill="${skin}"/>
+    <circle cx="34" cy="15" r="2.2" fill="${eye}"/>
+    <circle cx="46" cy="15" r="2.2" fill="${eye}"/>
+    <ellipse cx="40" cy="21" rx="3" ry="2" fill="#e8997a" opacity="0.6"/>
+    <path d="M36 23 Q40 27 44 23" stroke="#b05030" stroke-width="1" fill="none" stroke-linecap="round"/>`;
+  let shoes=`<ellipse cx="24" cy="83" rx="11" ry="4.5" fill="#333"/>
+    <ellipse cx="56" cy="83" rx="11" ry="4.5" fill="#333"/>
+    <circle cx="17" cy="83" r="6" fill="white" stroke="#333" stroke-width="0.8"/>
+    <path d="M14 81 L20 81 L19 86 L15 86 Z" fill="#333"/>
+    <circle cx="63" cy="83" r="6" fill="white" stroke="#333" stroke-width="0.8"/>
+    <path d="M60 81 L66 81 L65 86 L61 86 Z" fill="#333"/>`;
+  let body='',arms='',legs='';
+  if(evoIdx>=3){
+    arms=`<rect x="6" y="35" width="13" height="19" rx="5" fill="${skin}"/><rect x="61" y="35" width="13" height="19" rx="5" fill="${skin}"/>`;
+    body=`<rect x="18" y="32" width="44" height="27" rx="5" fill="#E85B10"/>
+      <rect x="18" y="32" width="44" height="27" rx="5" fill="none" stroke="#1565C0" stroke-width="2"/>
+      <rect x="23" y="32" width="10" height="27" fill="white" opacity="0.25"/>
+      <rect x="47" y="32" width="10" height="27" fill="white" opacity="0.25"/>
+      <line x1="18" y1="44" x2="62" y2="44" stroke="#1565C0" stroke-width="1.5" opacity="0.5"/>
+      <text x="40" y="50" text-anchor="middle" font-size="10" font-weight="800" fill="white">FC</text>`;
+    legs=`<rect x="20" y="59" width="15" height="22" rx="5" fill="#1565C0"/><rect x="45" y="59" width="15" height="22" rx="5" fill="#1565C0"/>`;
+  }else if(evoIdx>=2){
+    arms=`<rect x="6" y="35" width="13" height="19" rx="5" fill="${skin}"/><rect x="61" y="35" width="13" height="19" rx="5" fill="${skin}"/>`;
+    body=`<rect x="18" y="32" width="44" height="27" rx="5" fill="white"/>
+      <rect x="18" y="32" width="44" height="27" rx="5" fill="none" stroke="#E85B10" stroke-width="2"/>
+      <rect x="22" y="32" width="9" height="27" fill="#E85B10" opacity="0.2"/>
+      <rect x="49" y="32" width="9" height="27" fill="#E85B10" opacity="0.2"/>
+      <text x="40" y="49" text-anchor="middle" font-size="10" font-weight="800" fill="#E85B10">FC</text>`;
+    legs=`<rect x="20" y="59" width="15" height="22" rx="5" fill="#1a1a2e"/><rect x="45" y="59" width="15" height="22" rx="5" fill="#1a1a2e"/>`;
+  }else if(evoIdx>=1){
+    body=`<rect x="22" y="32" width="36" height="27" rx="5" fill="#cfe8ff"/>
+      <rect x="22" y="32" width="36" height="27" rx="5" fill="none" stroke="#2196F3" stroke-width="1.5"/>
+      <text x="40" y="49" text-anchor="middle" font-size="10" font-weight="700" fill="#2196F3">RUN</text>`;
+    legs=`<rect x="20" y="59" width="15" height="22" rx="5" fill="#444"/><rect x="45" y="59" width="15" height="22" rx="5" fill="#444"/>`;
+  }else{
+    arms=`<rect x="4" y="34" width="13" height="19" rx="5" fill="${skin}"/><rect x="63" y="34" width="13" height="19" rx="5" fill="${skin}"/>`;
+    body=`<rect x="16" y="32" width="48" height="27" rx="5" fill="#eeeeee"/>
+      <rect x="16" y="32" width="48" height="27" rx="5" fill="none" stroke="#bbb" stroke-width="1.5"/>`;
+    legs=`<rect x="20" y="59" width="15" height="22" rx="5" fill="#555"/><rect x="45" y="59" width="15" height="22" rx="5" fill="#555"/>`;
+  }
+  svg.innerHTML=head+arms+body+legs+shoes;
+}
+
+// ====== レーダー ======
+function drawRadar(d){
+  const cx=150,cy=130,r=80,n=5;
+  const vals=STAT_KEYS.map(k=>d.stats[k]||0);
+  const maxV=Math.max(30,...vals);
+  const off=-Math.PI/2;
+  function ptScale(i,v){const a=(2*Math.PI*i/n)+off,rv=Math.min(1,v/maxV)*r;return[cx+rv*Math.cos(a),cy+rv*Math.sin(a)];}
+  function ptPct(i,p){const a=(2*Math.PI*i/n)+off;return[cx+p*r*Math.cos(a),cy+p*r*Math.sin(a)];}
+  let svg='';
+  [0.2,0.4,0.6,0.8,1.0].forEach(p=>{
+    const pts=Array.from({length:n},(_,i)=>ptPct(i,p).join(',')).join(' ');
+    svg+=`<polygon points="${pts}" fill="none" stroke="#ddd" stroke-width="0.8"/>`;
+  });
+  for(let i=0;i<n;i++){const[x,y]=ptPct(i,1);svg+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#ddd" stroke-width="0.8"/>`;}
+  const dataPts=Array.from({length:n},(_,i)=>ptScale(i,vals[i]).join(',')).join(' ');
+  svg+=`<polygon points="${dataPts}" fill="#E85B10" fill-opacity="0.2" stroke="#E85B10" stroke-width="2"/>`;
+  for(let i=0;i<n;i++){
+    const a=(2*Math.PI*i/n)+off;
+    const cosA=Math.cos(a),sinA=Math.sin(a);
+    const lx=cx+(r+36)*cosA,ly=cy+(r+36)*sinA;
+    let anchor='middle';
+    if(cosA<-0.1)anchor='end';else if(cosA>0.1)anchor='start';
+    const ly1=(sinA<-0.15)?ly-8:ly-7;
+    const ly2=(sinA<-0.15)?ly+7:ly+8;
+    svg+=`<text x="${lx}" y="${ly1}" text-anchor="${anchor}" font-size="11" fill="#555" font-weight="600">${STAT_NAMES[STAT_KEYS[i]]}</text>`;
+    svg+=`<text x="${lx}" y="${ly2}" text-anchor="${anchor}" font-size="11" fill="${STAT_COLORS[STAT_KEYS[i]]}" font-weight="700">${vals[i]}</text>`;
+    const[dvx,dvy]=ptScale(i,vals[i]);
+    svg+=`<circle cx="${dvx}" cy="${dvy}" r="4" fill="#E85B10"/>`;
+  }
+  document.getElementById('radarSvg').innerHTML=svg;
+}
+
+// ====== renderAll ======
+function renderAll(){
+  const d=data, c=cfg();
+  const total=totalStats(d), bonus=calcBonus(d), overall=getOverall(d);
+  const lv=getLevel(overall), evo=getEvo(lv);
+
+  document.getElementById('headerName').textContent=(d.name||'選手')+' の育成記録';
+  document.getElementById('dispName').textContent=d.name||'選手';
+  document.getElementById('dispLevel').textContent='Lv.'+lv;
+  document.getElementById('dispOverall').textContent=overall;
+  const badge=document.getElementById('evoBadge');
+  badge.textContent=evo.label; badge.className='evo-badge '+evo.cls;
+  drawCharacter(lv);
+  document.getElementById('charStageLabel').textContent=evo.stageText;
+
+  const maxStat=Math.max(30,...STAT_KEYS.map(k=>d.stats[k]||0));
+  let barsHtml='';
+  STAT_KEYS.forEach(k=>{
+    const v=d.stats[k]||0, pct=Math.min(100,(v/maxStat)*100);
+    barsHtml+=`<div class="stat-row">
+      <div class="stat-label">${STAT_NAMES[k]}</div>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${pct}%;background:${STAT_COLORS[k]};"></div></div>
+      <div class="stat-val">${v}</div>
+    </div>`;
+  });
+  document.getElementById('statBars').innerHTML=barsHtml;
+
+  // ボーナス進捗
+  const prog=total%c.bonusEvery, pct2=Math.round((prog/c.bonusEvery)*100), cnt=Math.floor(total/c.bonusEvery);
+  document.getElementById('bonusWrap').innerHTML=`
+    <div class="bonus-progress-title">🎁 ボーナス進捗（合計パラメータ${c.bonusEvery}ptごとに総合力+${c.bonusAmount}）</div>
+    <div class="bonus-bar-outer"><div class="bonus-bar-inner" style="width:${pct2}%"></div></div>
+    <div class="bonus-progress-sub">現在 ${prog}pt / 次のボーナスまで ${c.bonusEvery-prog}pt　|　累計ボーナス: +${bonus}（${cnt}回達成）</div>`;
+
+  drawRadar(d);
+
+  // 試合ルールカード
+  document.getElementById('matchRuleCard').innerHTML=`<b>試合ポイントルール</b><br>
+    ⏱ 出場${c.matchUnit}分ごとに 全パラメータ +${c.matchTimePts}<br>
+    ⚽ ゴール1点 → シュート力 +${c.goalPts}<br>
+    🎯 アシスト1回 → テクニック +${c.assistPts}`;
+
+  // 練習グリッド
+  let tHtml='', lastCat=null;
+  TRAININGS.forEach(t=>{
+    if(t.cat!==lastCat){tHtml+=`<div class="train-section-label">${CAT_LABELS[t.cat]}</div>`;lastCat=t.cat;}
+    const pts=d.pts[t.id]||t.def, exPts=Math.floor(pts*1.5);
+    const eff=Object.keys(t.effect).map(k=>`${STAT_NAMES[k]} +${pts}`).join('、');
+    const effEx=Object.keys(t.effect).map(k=>`${STAT_NAMES[k]} +${exPts}`).join('、');
+    tHtml+=`<div class="train-card">
+      <div class="train-info">
+        <div class="t-name">${t.icon} ${t.name}</div>
+        <div class="t-effect">${t.desc}</div>
+        <div class="t-pts">通常: ${eff} / EX: ${effEx}</div>
+      </div>
+      <div class="train-btn-row">
+        <button class="train-normal-btn" onclick="doTrain('${t.id}',false)">練習する</button>
+        <button class="train-ex-btn" onclick="doTrain('${t.id}',true)">⭐ EXCELLENT!</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('trainingGrid').innerHTML=tHtml;
+
+  // ログ
+  const logs=(d.log||[]).slice().reverse();
+  let logHtml=logs.length?'':'<div class="log-empty">まだ記録がありません</div>';
+  logs.forEach(l=>{logHtml+=`<div class="log-item"><div><div class="log-name">${l.label}</div><div class="log-pts">${l.pts}</div></div><div class="log-date">${l.date}</div></div>`;});
+  document.getElementById('logList').innerHTML=logHtml;
+
+  // 設定フォーム（解除済みのときだけ更新）
+  if(document.getElementById('settingsBody').classList.contains('unlocked')){
+    fillSettingsForm();
+  }
+}
+
+function fillSettingsForm(){
+  const c=cfg();
+  document.getElementById('editName').value=data.name||'';
+  document.getElementById('cfg_matchUnit').value=c.matchUnit;
+  document.getElementById('cfg_matchTimePts').value=c.matchTimePts;
+  document.getElementById('cfg_goalPts').value=c.goalPts;
+  document.getElementById('cfg_assistPts').value=c.assistPts;
+  document.getElementById('cfg_levelStep').value=c.levelStep;
+  document.getElementById('cfg_rankStep').value=c.rankStep;
+  document.getElementById('cfg_bonusEvery').value=c.bonusEvery;
+  document.getElementById('cfg_bonusAmount').value=c.bonusAmount;
+  let ptHtml='';
+  TRAININGS.forEach(t=>{
+    const pts=data.pts[t.id]||t.def;
+    ptHtml+=`<div class="pt-row"><label>${t.icon} ${t.name}</label>
+      <input type="number" min="1" max="999" value="${pts}" onchange="updatePt('${t.id}',this.value)"> pt/回</div>`;
+  });
+  document.getElementById('ptSettings').innerHTML=ptHtml;
+}
+
+// ====== タブ ======
+function showTab(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+  renderAll();
+}
+
+// ====== パスワード ======
+function checkPw(){
+  const v=document.getElementById('pwInput').value;
+  if(v===PASSWORD){
+    document.getElementById('pwGate').style.display='none';
+    document.getElementById('settingsBody').classList.add('unlocked');
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwError').textContent='';
+    fillSettingsForm();
+  }else{
+    document.getElementById('pwError').textContent='パスワードが違います';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+  }
+}
+function lockSettings(){
+  document.getElementById('pwGate').style.display='';
+  document.getElementById('settingsBody').classList.remove('unlocked');
+  document.getElementById('pwInput').value='';
+  document.getElementById('pwError').textContent='';
+}
+
+// ====== 練習 ======
+function doTrain(id,excellent){
+  const t=TRAININGS.find(x=>x.id===id);if(!t)return;
+  const base=data.pts[id]||t.def, pts=excellent?Math.floor(base*1.5):base;
+  Object.keys(t.effect).forEach(k=>{data.stats[k]=(data.stats[k]||0)+pts;});
+  const eff=Object.keys(t.effect).map(k=>`${STAT_NAMES[k]} +${pts}`).join(' / ');
+  const label=excellent?`⭐ ${t.name}（EXCELLENT）`:t.name;
+  const now=new Date();
+  data.log.push({label,pts:eff,date:`${now.getMonth()+1}/${now.getDate()}`});
+  saveData(data); showToast(label+' 完了! '+eff,excellent); renderAll();
+}
+
+// ====== 試合 ======
+function addMatch(){
+  const c=cfg();
+  const mins=parseInt(document.getElementById('matchMin').value)||0;
+  const goals=parseInt(document.getElementById('matchGoals').value)||0;
+  const assists=parseInt(document.getElementById('matchAssists').value)||0;
+  const timePts=Math.floor(mins/c.matchUnit)*c.matchTimePts;
+  if(timePts>0) STAT_KEYS.forEach(k=>{data.stats[k]=(data.stats[k]||0)+timePts;});
+  data.stats.shoot=(data.stats.shoot||0)+goals*c.goalPts;
+  data.stats.tech=(data.stats.tech||0)+assists*c.assistPts;
+  const now=new Date();
+  let desc=`出場${mins}分`;
+  if(timePts>0) desc+=` → 全パラ+${timePts}`;
+  if(goals>0)   desc+=` / ${goals}ゴール → シュート+${goals*c.goalPts}`;
+  if(assists>0) desc+=` / ${assists}アシスト → テクニック+${assists*c.assistPts}`;
+  data.log.push({label:'⚽ 試合出場',pts:desc,date:`${now.getMonth()+1}/${now.getDate()}`});
+  saveData(data); showToast('試合記録を追加しました！');
+  document.getElementById('matchMin').value=0;
+  document.getElementById('matchGoals').value=0;
+  document.getElementById('matchAssists').value=0;
+  showTab('status',document.querySelectorAll('.tab')[0]);
+}
+
+// ====== 設定保存 ======
+function saveSettings(){
+  data.name=document.getElementById('editName').value||'選手';
+  saveData(data); showToast('選手名を保存しました！'); renderAll();
+}
+function saveConfig(){
+  data.cfg={
+    matchUnit:    parseInt(document.getElementById('cfg_matchUnit').value)    ||10,
+    matchTimePts: parseInt(document.getElementById('cfg_matchTimePts').value) ||1,
+    goalPts:      parseInt(document.getElementById('cfg_goalPts').value)      ||5,
+    assistPts:    parseInt(document.getElementById('cfg_assistPts').value)    ||3,
+    levelStep:    parseInt(document.getElementById('cfg_levelStep').value)    ||150,
+    rankStep:     parseInt(document.getElementById('cfg_rankStep').value)     ||10,
+    bonusEvery:   parseInt(document.getElementById('cfg_bonusEvery').value)   ||30,
+    bonusAmount:  parseInt(document.getElementById('cfg_bonusAmount').value)  ||100,
+  };
+  saveData(data); showToast('設定を保存しました！'); renderAll();
+}
+function updatePt(id,val){ data.pts[id]=Math.max(1,parseInt(val)||1); saveData(data); }
+
+// ====== リセット ======
+function openStatReset(){ document.getElementById('modalStatReset').classList.add('open'); }
+function openFullReset(){ document.getElementById('modalFullReset').classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function doStatReset(){
+  closeModal('modalStatReset');
+  STAT_KEYS.forEach(k=>{data.stats[k]=0;});
+  saveData(data); showToast('ステータスをリセットしました'); renderAll();
+}
+function doFullReset(){
+  closeModal('modalFullReset');
+  data={name:'選手',stats:{shoot:0,tech:0,agility:0,core:0,stamina:0},pts:defPts(),log:[],cfg:{...DEFAULT_CFG}};
+  saveData(data); showToast('全データをリセットしました'); renderAll();
+}
+
+// ====== トースト ======
+function showToast(msg,excellent=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(excellent?' excellent':'');
+  t.style.opacity='1';
+  setTimeout(()=>{t.style.opacity='0';},2400);
+}
+
+renderAll();
+</script>
+</body>
+</html>
